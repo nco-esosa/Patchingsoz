@@ -1,0 +1,27 @@
+- name: Test Yum Update
+  hosts: all
+  become: true
+  become_user: sysadm
+  gather_facts: no
+  tasks:
+    - name: Yum update the kernel
+      package:
+        name: kernel
+        state: latest
+      register: upgraded
+
+    - name: reboot
+      shell: shutdown -r now
+      when: upgraded.changed
+      register: reboot
+
+    - name: Wait for the server to come back
+      wait_for:
+        host: "{{ ansible_ssh_host | default(inventory_hostname) }}"
+        delay: 30
+        state: started
+        search_regex: OpenSSH
+        port: 22
+      become: false
+      when: reboot.changed
+      delegate_to: localhost
