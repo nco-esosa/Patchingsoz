@@ -1,27 +1,38 @@
 - name: Test Yum Update
   hosts: all
   become: true
-  become_user: sysadm
+  become_user: root
   gather_facts: no
   tasks:
-    - name: Yum update the kernel
-      package:
-        name: kernel
+   - name: Yum clean all
+      shell: yum clean all
+      args:
+        warn: false
+    - name: RHN profile sync
+      shell: /usr/sbin/rhn-profile-sync
+    - name: RHN check
+      command: /usr/sbin/rhn_check
+    - name: Upgrade kernel
+      yum:
+        name: 'kernel*'
         state: latest
-      register: upgraded
-
+    - name: Upgrade everything else
+      yum:
+        name: '*'
+        state: latest
+        exclude: 'kernel*'
     - name: reboot
-      shell: shutdown -r now
-      when: upgraded.changed
-      register: reboot
-
-    - name: Wait for the server to come back
-      wait_for:
-        host: "{{ ansible_ssh_host | default(inventory_hostname) }}"
-        delay: 30
-        state: started
-        search_regex: OpenSSH
-        port: 22
-      become: false
-      when: reboot.changed
-      delegate_to: localhost
+      reboot:
+        reboot_timeout: 320
+#    - name: Sending an e-mail using Gmail SMTP servers
+#      mail:
+#        host: smtp.gmail.com
+#        port: 587
+#        username: username@gmail.com
+#        password: mysecret
+#        to: edward.sosa.noaa.gov
+#        subject: Ansible-report
+#        body: System {{ ansible_hostname }} did not reboot
+#      delegate_to: localhost
+#      when: not rebooted
+    
