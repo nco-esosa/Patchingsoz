@@ -4,7 +4,7 @@
   become_user: root
   gather_facts: no
   tasks:
-   - name: Yum clean all
+    - name: Yum clean all
       shell: yum clean all
       args:
         warn: false
